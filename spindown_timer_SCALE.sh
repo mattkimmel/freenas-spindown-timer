@@ -119,7 +119,7 @@ function detect_drives() {
         # In manual mode the ignored drives become the explicitly monitored drives
         DRIVE_IDS=" ${IGNORED_DRIVES} "
     else
-        DRIVE_IDS=`iostat -x | grep -E '^(ada|da)' | awk '{printf $1 " "}'`
+        DRIVE_IDS=`iostat -x | grep -E '^(sd)' | awk '{printf $1 " "}'`
         DRIVE_IDS=" ${DRIVE_IDS} " # Space padding must be kept for pattern matching
 
         # Remove ignored drives
@@ -129,7 +129,7 @@ function detect_drives() {
     fi
     # Detect protocol type (ATA or SCSI) for each drive and populate $DRIVES array
     for drive in ${DRIVE_IDS}; do
-        if [[ -n $(camcontrol identify $drive |& grep -E "^protocol(.*)ATA") ]]; then
+        if [[ -n $(hdparm -I $drive |& grep -E "^ATA device") ]]; then
             DRIVES[$drive]="ATA"
         else
             DRIVES[$drive]="SCSI"
@@ -201,17 +201,18 @@ function is_ata_drive() {
 ##
 function drive_is_spinning() {
     if [[ $(is_ata_drive $1) -eq 1 ]]; then
-        if [[ -z $(camcontrol epc $1 -c status -P | grep 'Standby') ]]; then echo 1; else echo 0; fi
+        if [[ -z $(hdparm -C $1 | grep 'standby') ]]; then echo 1; else echo 0; fi
     else
         # Reads STANDBY values from the power condition mode page (0x1a).
         # THIS IS EXPERIMENTAL AND UNTESTED due to the lack of SCSI drives :(
         #
         # See: /usr/share/misc/scsi_modes and the "SCSI Commands Reference Manual"
-        if [[ -z $(camcontrol modepage $1 -m 0x1a |& grep -E "^STANDBY(.*)1") ]]; then echo 1; else echo 0; fi
+        # Not yet found equivalent to original camcontrol modepage, so just repeating the only known option for now.
+        if [[ -z $(hdparm -C $1 |& grep -E "^standby") ]]; then echo 1; else echo 0; fi
     fi
 }
 ##
-# Forces the spindown of the drive specified by parameter $1 trough camcontrol
+# Forces the spindown of the drive specified by parameter $1 trough camcontrol (hdparm for SCALE)
 #
 # Arguments:
 #   $1 Device identifier of the drive
@@ -221,10 +222,10 @@ function spindown_drive() {
         if [[ $DRYRUN -eq 0 ]]; then
             if [[ $(is_ata_drive $1) -eq 1 ]]; then
                 # Spindown ATA drive
-                camcontrol standby $1
+                hdparm -y $1
             else
                 # Spindown SCSI drive
-                camcontrol stop $1
+                hdparm -Y $1
             fi
         fi
         log "$(date '+%F %T') Spun down idle drive: $1"
