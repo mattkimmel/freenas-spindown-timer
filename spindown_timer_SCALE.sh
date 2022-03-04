@@ -129,7 +129,7 @@ function detect_drives() {
     fi
     # Detect protocol type (ATA or SCSI) for each drive and populate $DRIVES array
     for drive in ${DRIVE_IDS}; do
-        if [[ -n $(hdparm -I $drive |& grep -E "^ATA device") ]]; then
+        if [[ -n $(hdparm -I /dev/$drive |& grep -E "^ATA device") ]]; then
             DRIVES[$drive]="ATA"
         else
             DRIVES[$drive]="SCSI"
@@ -201,14 +201,14 @@ function is_ata_drive() {
 ##
 function drive_is_spinning() {
     if [[ $(is_ata_drive $1) -eq 1 ]]; then
-        if [[ -z $(hdparm -C $1 | grep 'standby') ]]; then echo 1; else echo 0; fi
+        if [[ -z $(hdparm -C /dev/$1 | grep 'standby') ]]; then echo 1; else echo 0; fi
     else
         # Reads STANDBY values from the power condition mode page (0x1a).
         # THIS IS EXPERIMENTAL AND UNTESTED due to the lack of SCSI drives :(
         #
         # See: /usr/share/misc/scsi_modes and the "SCSI Commands Reference Manual"
         # Not yet found equivalent to original camcontrol modepage, so just repeating the only known option for now.
-        if [[ -z $(hdparm -C $1 |& grep -E "^standby") ]]; then echo 1; else echo 0; fi
+        if [[ -z $(hdparm -C /dev/$1 |& grep "standby") ]]; then echo 1; else echo 0; fi
     fi
 }
 ##
@@ -222,10 +222,10 @@ function spindown_drive() {
         if [[ $DRYRUN -eq 0 ]]; then
             if [[ $(is_ata_drive $1) -eq 1 ]]; then
                 # Spindown ATA drive
-                hdparm -y $1
+                hdparm -y /dev/$1
             else
                 # Spindown SCSI drive
-                hdparm -Y $1
+                hdparm -Y /dev/$1
             fi
         fi
         log "$(date '+%F %T') Spun down idle drive: $1"
