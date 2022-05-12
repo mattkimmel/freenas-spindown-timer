@@ -222,7 +222,7 @@ function spindown_drive() {
         if [[ $DRYRUN -eq 0 ]]; then
             if [[ $(is_ata_drive $1) -eq 1 ]]; then
                 # Spindown ATA drive
-                hdparm -y /dev/$1
+                hdparm -Y /dev/$1
             else
                 # Spindown SCSI drive
                 hdparm -Y /dev/$1
