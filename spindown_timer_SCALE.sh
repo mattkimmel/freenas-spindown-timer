@@ -157,7 +157,7 @@ function get_drives() {
 function get_idle_drives() {
     # Wait for $1 seconds and get active drives
     local IOSTAT_OUTPUT=`iostat -x -z -d $1 2`
-    local CUT_OFFSET=`grep -no "extended device statistics" <<< ${IOSTAT_OUTPUT} | tail -n1 | grep -Eo '^[^:]+'`
+    local CUT_OFFSET=`grep -m2 -no "Drive" <<< ${IOSTAT_OUTPUT} | tail -n1 | grep -Eo '^[^:]+'`
     local ACTIVE_DRIVES=`tail -n +$((CUT_OFFSET+2)) <<< ${IOSTAT_OUTPUT} | awk '{printf $1}{printf " "}'`
     # Remove active drives from list to get idle drives
     local IDLE_DRIVES=" $(get_drives) " # Space padding must be kept for pattern matching
