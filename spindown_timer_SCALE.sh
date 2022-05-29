@@ -222,10 +222,10 @@ function spindown_drive() {
         if [[ $DRYRUN -eq 0 ]]; then
             if [[ $(is_ata_drive $1) -eq 1 ]]; then
                 # Spindown ATA drive
-                hdparm -y /dev/$1
+                hdparm -y $1
             else
                 # Spindown SCSI drive
-                hdparm -y /dev/$1
+                hdparm -y $1
             fi
         fi
         log "$(date '+%F %T') Spun down idle drive: $1"
