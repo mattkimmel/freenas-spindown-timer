@@ -201,14 +201,14 @@ function is_ata_drive() {
 ##
 function drive_is_spinning() {
     if [[ $(is_ata_drive $1) -eq 1 ]]; then
-        if [[ -z $(hdparm -C /dev/$1 | grep 'standby') ]]; then echo 1; else echo 0; fi
+        if [[ -z $(hdparm -C $1 | grep 'standby') ]]; then echo 1; else echo 0; fi
     else
         # Reads STANDBY values from the power condition mode page (0x1a).
         # THIS IS EXPERIMENTAL AND UNTESTED due to the lack of SCSI drives :(
         #
         # See: /usr/share/misc/scsi_modes and the "SCSI Commands Reference Manual"
         # Not yet found equivalent to original camcontrol modepage, so just repeating the only known option for now.
-        if [[ -z $(hdparm -C /dev/$1 |& grep "standby") ]]; then echo 1; else echo 0; fi
+        if [[ -z $(hdparm -C $1 |& grep "standby") ]]; then echo 1; else echo 0; fi
     fi
 }
 ##
