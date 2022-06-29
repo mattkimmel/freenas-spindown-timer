@@ -157,7 +157,7 @@ function get_drives() {
 function get_idle_drives() {
     # Wait for $1 seconds and get active drives
     local IOSTAT_OUTPUT=`iostat -x -z -d $1 2`
-    local CUT_OFFSET=`grep -m2 -no "Drive" <<< ${IOSTAT_OUTPUT} | tail -n1 | grep -Eo '^[^:]+'`
+    local CUT_OFFSET=`grep -m2 -no "Device" <<< ${IOSTAT_OUTPUT} | tail -n1 | grep -Eo '^[^:]+'`
     local ACTIVE_DRIVES=`tail -n +$((CUT_OFFSET+2)) <<< ${IOSTAT_OUTPUT} | awk '{printf $1}{printf " "}'`
     # Remove active drives from list to get idle drives
     local IDLE_DRIVES=" $(get_drives) " # Space padding must be kept for pattern matching
@@ -201,14 +201,14 @@ function is_ata_drive() {
 ##
 function drive_is_spinning() {
     if [[ $(is_ata_drive $1) -eq 1 ]]; then
-        if [[ -z $(hdparm -C $1 | grep 'standby') ]]; then echo 1; else echo 0; fi
+        if [[ -z $(hdparm -C /dev/$1 | grep 'standby') ]]; then echo 1; else echo 0; fi
     else
         # Reads STANDBY values from the power condition mode page (0x1a).
         # THIS IS EXPERIMENTAL AND UNTESTED due to the lack of SCSI drives :(
         #
         # See: /usr/share/misc/scsi_modes and the "SCSI Commands Reference Manual"
         # Not yet found equivalent to original camcontrol modepage, so just repeating the only known option for now.
-        if [[ -z $(hdparm -C $1 |& grep "standby") ]]; then echo 1; else echo 0; fi
+        if [[ -z $(hdparm -C /dev/$1 |& grep "standby") ]]; then echo 1; else echo 0; fi
     fi
 }
 ##
@@ -222,10 +222,10 @@ function spindown_drive() {
         if [[ $DRYRUN -eq 0 ]]; then
             if [[ $(is_ata_drive $1) -eq 1 ]]; then
                 # Spindown ATA drive
-                hdparm -y $1
+                hdparm -y /dev/$1
             else
                 # Spindown SCSI drive
-                hdparm -y $1
+                hdparm -y /dev/$1
             fi
         fi
         log "$(date '+%F %T') Spun down idle drive: $1"
